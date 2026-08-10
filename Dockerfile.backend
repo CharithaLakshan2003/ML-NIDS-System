@@ -1,0 +1,20 @@
+# Shared image for the three new Python services: the FastAPI backend,
+# the MinIO/Parquet data-lake writer, and the OpenSearch alert indexer.
+# docker-compose.yml runs a different command against this same image for
+# each one, so there's one build to maintain instead of three.
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements-backend.txt /app/requirements-backend.txt
+RUN pip install --no-cache-dir -r requirements-backend.txt
+
+COPY services/ /app/services/
+COPY backend/ /app/backend/
+
+ENV PYTHONPATH=/app/services:/app
+ENV PYTHONUNBUFFERED=1
+
+# Overridden per-service by docker-compose.yml's `command:` - this default
+# just runs the API so `docker run` on the raw image does something sane.
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

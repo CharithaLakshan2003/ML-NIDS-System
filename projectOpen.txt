@@ -1,0 +1,23 @@
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+Get-ExecutionPolicy -Scope CurrentUser
+
+powershell -ExecutionPolicy Bypass -File ".\start-pipeline.ps1"
+powershell -ExecutionPolicy Bypass -File ".\stop-pipeline.ps1"
+
+
+
+
+
+
+
+
+cd "C:\Program Files\Suricata"
+
+
+## Get-NetIPAddress -InterfaceAlias "Wi-Fi" -AddressFamily IPv4
+
+.\suricata.exe -i 192.168.8.100 -c suricata.yaml -vvv
+
+
+Get-Content "C:\suricata-logs\eve.json" -Wait -Tail 10

@@ -1,0 +1,10 @@
+# --- Used inside the Flink image (Dockerfile.flink) for both PyFlink jobs ---
+apache-flink==1.18.1
+tensorflow-cpu==2.13.1
+scikit-learn==1.3.2
+joblib==1.3.2
+numpy==1.24.3
+
+# --- Used on the host: producer + the save_training_metadata.py notebook cell ---
+kafka-python==2.0.2
+pandas==2.1.4
