@@ -1,0 +1,106 @@
+# ---------------------------------------------------------------------------
+# Hybrid NIDS - ML ENGINE ONLY
+#
+# This compose file runs the smallest infrastructure the ML engine needs and
+# NOTHING else - no Suricata, Filebeat, CICFlowMeter, MinIO, OpenSearch,
+# datalake-writer, alert-indexer, or backend. Just:
+#
+#   kafka        single-broker Kafka in KRaft mode (input/output topics)
+#   kafka-ui     web UI at http://localhost:8080 to watch topics/messages
+#   jobmanager   Flink JobManager (dashboard at http://localhost:8081)
+#   taskmanager  Flink TaskManager (4 task slots -> both ML jobs run at once)
+#
+# The two ML jobs (feature_engineering_job.py, fusion_job.py) are submitted
+# from the host by start-ml-engine.ps1 - see README.md.
+#
+# PORT NOTE: host ports match the full pipeline (29092 / 8080 / 8081) so the
+# ML engine speaks the exact same Kafka contract. That means the FULL
+# pipeline and this ML engine CANNOT run at the same time on one machine -
+# stop one before starting the other.
+# ---------------------------------------------------------------------------
+
+name: nids-ml-engine
+
+services:
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: ml-kafka
+    ports:
+      # Host access goes through the PLAINTEXT_HOST listener (localhost:29092);
+      # the 9092 listener is for containers on the Docker network only, so it
+      # is NOT published to the host (Windows may reserve port 9092).
+      - "29092:29092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,PLAINTEXT_HOST://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      CLUSTER_ID: "hybrid-nids-kraft-cluster-1"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: ml-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: nids-ml-engine
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+
+  jobmanager:
+    build:
+      context: .
+      dockerfile: Dockerfile.flink
+    container_name: ml-flink-jobmanager
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8081:8081"   # Flink dashboard + REST API
+    command: jobmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: jobmanager
+        parallelism.default: 2
+        state.backend: hashmap
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+    volumes:
+      - ./flink_jobs:/opt/flink/usrlib/flink_jobs
+      - ./models:/opt/flink/usrlib/models
+      - flink-checkpoints:/opt/flink/checkpoints
+
+  taskmanager:
+    build:
+      context: .
+      dockerfile: Dockerfile.flink
+    container_name: ml-flink-taskmanager
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 4
+        state.backend: hashmap
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+    volumes:
+      - ./flink_jobs:/opt/flink/usrlib/flink_jobs
+      - ./models:/opt/flink/usrlib/models
+      - flink-checkpoints:/opt/flink/checkpoints
+
+volumes:
+  flink-checkpoints:
