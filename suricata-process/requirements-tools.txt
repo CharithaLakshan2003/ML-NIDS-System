@@ -1,0 +1,5 @@
+# Host-side dependencies for the tools/ scripts (sample-data publisher and
+# topic consumer). Install into the project venv:
+#   .\venv\Scripts\Activate.ps1
+#   pip install -r ml-engine\requirements-tools.txt
+kafka-python==2.0.2

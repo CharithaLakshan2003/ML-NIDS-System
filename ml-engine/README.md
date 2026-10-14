@@ -286,3 +286,12 @@ rebuild is needed — but running jobs must be resubmitted to pick them up).
 | `flink run` blocks forever | Streaming job attached | Keep the `-d` (detached) flag |
 | No `nids-alerts` appearing | No alert/feature matched, or all flows scored `None` (benign) | Publish more sample data; lower thresholds in `determine_severity()` |
 | `docker compose` can't find file | Run from wrong directory | The scripts `Set-Location` to their own folder; for manual runs `cd ml-engine` first |
+
+ # #   D i s t r i b u t e d   S e t u p 
+ F o r   r u n n i n g   m l - e n g i n e   o n   a   s e p a r a t e   l a p t o p   ( c o n n e c t i n g   t o   e x t e r n a l   K a f k a   f r o m   k a f k a - p r o c e s s ) ,   u s e   d o c k e r - c o m p o s e . e x t e r n a l - k a f k a . y m l : 
+ ` p o w e r s h e l l 
+   =   ' 1 9 2 . 1 6 8 . 1 . 1 0 0 : 2 9 0 9 2 ' 
+ d o c k e r   c o m p o s e   - f   d o c k e r - c o m p o s e . e x t e r n a l - k a f k a . y m l   u p   - d   - - b u i l d 
+ ` 
+  
+ 
