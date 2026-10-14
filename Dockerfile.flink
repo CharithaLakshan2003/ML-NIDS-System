@@ -26,3 +26,5 @@ RUN curl -fSL -o /opt/flink/lib/flink-sql-connector-kafka-${KAFKA_CONNECTOR_VERS
 # baked into the image - that keeps rebuilds fast while you iterate on the
 # Python job logic and lets you swap retrained models without a rebuild.
 RUN mkdir -p /opt/flink/checkpoints
+
+RUN sed -i 's#--add-exports=jdk\.compiler/[^ ]*##g' /opt/flink/conf/flink-conf.yaml

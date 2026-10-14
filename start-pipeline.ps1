@@ -14,11 +14,13 @@
 # ---- EDIT THESE PATHS TO MATCH YOUR MACHINE -----------------
 $ProjectDir      = "D:\3rd year project\NIDS_with_kafka_and_flink"
 $SuricataDir     = "C:\Program Files\Suricata"
-$SuricataIface   = "192.168.8.100"
-#$SuricataIface   = "10.23.0.216"   # your Wi-Fi adapter's IP address
+# $SuricataIface   = "10.21.95.184"                   
+# $SuricataIface   = "192.168.8.100" 
+$SuricataIface   = "10.23.0.216"   # your Wi-Fi adapter's IP address
 $FilebeatDir     = "C:\Program Files\Elastic\Beats\9.4.4\filebeat"
 $FilebeatConfig  = "$ProjectDir\filebeat\filebeat.yml"
 $CICFlowMeterDir = "C:\CICFlowMeter-app\CICFlowMeter-4.0\bin"
+
 $CICOutputDir    = "C:\CICFlowMeter-app\CICFlowMeter-4.0\bin\data\daily"
 # ---------------------------------------------------------------
 
@@ -74,10 +76,21 @@ docker compose exec jobmanager flink run -d -pyFiles /opt/flink/usrlib/flink_job
 
 Start-Sleep -Seconds 5
 Write-Host "`n=== Process check (each should show a running process) ===" -ForegroundColor Green
-Write-Host "Suricata: "   -NoNewline; Get-Process suricata -ErrorAction SilentlyContinue | Select-Object Id, ProcessName
-Write-Host "Filebeat: "   -NoNewline; Get-Process filebeat -ErrorAction SilentlyContinue | Select-Object Id, ProcessName
-Write-Host "Java (CICFlowMeter): " -NoNewline; Get-Process java -ErrorAction SilentlyContinue | Select-Object Id, ProcessName
-Write-Host "Python (producer): "  -NoNewline; Get-Process python -ErrorAction SilentlyContinue | Select-Object Id, ProcessName
+$processChecks = [ordered]@{
+    "Suricata"            = "suricata"
+    "Filebeat"            = "filebeat"
+    "Java (CICFlowMeter)" = "java"
+    "Python (producer)"   = "python"
+}
+foreach ($label in $processChecks.Keys) {
+    $procs = Get-Process $processChecks[$label] -ErrorAction SilentlyContinue
+    if ($procs) {
+        $pids = ($procs | ForEach-Object { $_.Id }) -join ", "
+        Write-Host ("  {0,-20}: running (PID {1})" -f $label, $pids)
+    } else {
+        Write-Host ("  {0,-20}: NOT RUNNING" -f $label) -ForegroundColor Red
+    }
+}
 
 Write-Host "`n=== All components launched. Check: ===" -ForegroundColor Green
 Write-Host "  Kafka UI:              http://localhost:8080"
