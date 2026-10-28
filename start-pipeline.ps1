@@ -15,8 +15,8 @@
 $ProjectDir      = "D:\3rd year project\NIDS_with_kafka_and_flink"
 $SuricataDir     = "C:\Program Files\Suricata"
 # $SuricataIface   = "10.21.95.184"                   
-# $SuricataIface   = "192.168.8.100" 
-$SuricataIface   = "10.23.0.216"   # your Wi-Fi adapter's IP address
+$SuricataIface   = "192.168.8.100" 
+# $SuricataIface   = "10.23.0.216"   # your Wi-Fi adapter's IP address
 $FilebeatDir     = "C:\Program Files\Elastic\Beats\9.4.4\filebeat"
 $FilebeatConfig  = "$ProjectDir\filebeat\filebeat.yml"
 $CICFlowMeterDir = "C:\CICFlowMeter-app\CICFlowMeter-4.0\bin"

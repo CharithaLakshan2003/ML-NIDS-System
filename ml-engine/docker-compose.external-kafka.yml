@@ -1,14 +1,39 @@
-# ML Engine without local Kafka - connects to external Kafka
+# ---------------------------------------------------------------------------
+# Hybrid NIDS - ML ENGINE (external Kafka mode)
+#
+# Runs ONLY the Flink JobManager/TaskManager that host the two ML jobs, and
+# connects to a Kafka broker run elsewhere (typically the kafka-process machine
+# on your LAN). No local Kafka is started, so this can run alongside anything.
+#
+# REQUIRED: set KAFKA_BOOTSTRAP in a .env file next to this compose file.
+#   cp .env.example .env     (then edit the IP)
+# Compose reads .env automatically; the :? syntax below makes startup fail
+# fast with a clear message if you forget.
+#
+# HOST PORT NOTE: Flink dashboard is on 8081 and kafka-ui on 8080, matching the
+# rest of the project. If those ports are already taken on this machine,
+# remap the left side (e.g. "18081:8081").
+# ---------------------------------------------------------------------------
+
 name: nids-ml-engine-ext
 
 services:
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: ml-kafka-ui
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: nids-external
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: ${KAFKA_BOOTSTRAP:?Set KAFKA_BOOTSTRAP in ml-engine\.env (see .env.example)}
+
   jobmanager:
     build:
       context: .
       dockerfile: Dockerfile.flink
     container_name: ml-flink-jobmanager
     ports:
-      - "8081:8081"
+      - "8081:8081"   # Flink dashboard + REST API
     command: jobmanager
     environment:
       FLINK_PROPERTIES: |
@@ -16,7 +41,7 @@ services:
         parallelism.default: 2
         state.backend: hashmap
         state.checkpoints.dir: file:///opt/flink/checkpoints
-      KAFKA_BOOTSTRAP: 
+      KAFKA_BOOTSTRAP: ${KAFKA_BOOTSTRAP:?Set KAFKA_BOOTSTRAP in ml-engine\.env (see .env.example)}
     volumes:
       - ./flink_jobs:/opt/flink/usrlib/flink_jobs
       - ./models:/opt/flink/usrlib/models
@@ -36,7 +61,7 @@ services:
         taskmanager.numberOfTaskSlots: 4
         state.backend: hashmap
         state.checkpoints.dir: file:///opt/flink/checkpoints
-      KAFKA_BOOTSTRAP: 
+      KAFKA_BOOTSTRAP: ${KAFKA_BOOTSTRAP:?Set KAFKA_BOOTSTRAP in ml-engine\.env (see .env.example)}
     volumes:
       - ./flink_jobs:/opt/flink/usrlib/flink_jobs
       - ./models:/opt/flink/usrlib/models

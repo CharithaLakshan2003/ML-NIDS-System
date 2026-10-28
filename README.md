@@ -404,11 +404,3 @@ Problems actually hit while building this, in case they recur:
 
 ---
 
-## 11. Sharing This Project With Your Group
-
-Use Git (recommended for a group project) — see `.gitignore` in this repo,
-which excludes `venv/`, `__pycache__/`, and CICFlowMeter's build output.
-**Do** keep `models/*.h5|*.pkl|*.json` tracked — teammates can't run the
-fusion job without them. Whoever clones this repo still needs to complete
-§3 (Suricata/Filebeat/CICFlowMeter) themselves — those tools live on each
-person's Windows machine, not in the repo.
